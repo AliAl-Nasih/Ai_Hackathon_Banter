@@ -1,0 +1,24 @@
+<!doctype html>
+<html>
+  <body>
+    <h2>Debate test (text-only)</h2>
+    <input id="topic" placeholder="Topic (e.g. Universal basic income)"><br>
+    <textarea id="user" placeholder="Your argument"></textarea><br>
+    <button id="send">Send</button>
+    <pre id="log"></pre>
+
+    <script>
+      document.getElementById("send").onclick = async () => {
+        const topic = document.getElementById("topic").value;
+        const userMessage = document.getElementById("user").value;
+        const res = await fetch("http://localhost:3000/debate", {
+          method: "POST",
+          headers: {"Content-Type":"application/json"},
+          body: JSON.stringify({topic, userMessage})
+        });
+        const data = await res.json();
+        document.getElementById("log").textContent += "\\nYou: " + userMessage + "\\nAI: " + (data.reply||data.error) + "\\n---\\n";
+      };
+    </script>
+  </body>
+</html>
