@@ -2,24 +2,180 @@
 <html>
 
 <body>
-  <h2>Debate test (text-only)</h2>
-  <input id="topic" placeholder="Topic (e.g. Universal basic income)"><br>
-  <textarea id="user" placeholder="Your argument"></textarea><br>
-  <button id="send">Send</button>
-  <pre id="log"></pre>
+  <h2>AI Debate Banter</h2>
+
+  <div id="setupScreen">
+    <h3>Setup Your Debate</h3>
+    <div>
+      <label>Topic:</label><br>
+      <input id="topic" placeholder="e.g. Universal Basic Income" value="AI Safety"
+        style="width: 80%; margin-bottom: 10px;">
+    </div>
+    <div>
+      <label>Your Stance:</label><br>
+      <textarea id="userStance" placeholder="State your position on the topic..." rows="3"
+        style="width: 80%; margin-bottom: 10px;"></textarea>
+    </div>
+    <button id="startDebate" style="font-size: 16px; padding: 10px 20px;">🎯 Start Voice Debate</button>
+  </div>
+
+  <div id="debateScreen" style="display: none;">
+    <h3>Voice Debate in Progress</h3>
+    <p><strong>Topic:</strong> <span id="currentTopic"></span></p>
+    <button id="recordBtn">🎤 Speak Your Argument</button>
+    <button id="endDebate" style="margin-left: 10px;">End Debate</button>
+    <p id="status">Waiting for you to speak...</p>
+  </div>
+
+  <hr>
+
+  <h3>Debate Log</h3>
+  <div id="log" style="white-space: pre-wrap; background: #f0f0f0; padding: 10px; min-height: 200px;"></div>
 
   <script>
-    document.getElementById("send").onclick = async () => {
-      const topic = document.getElementById("topic").value;
-      const userMessage = document.getElementById("user").value;
-      const res = await fetch("http://localhost:8000/debate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ topic, userMessage })
-      });
-      const data = await res.json();
-      document.getElementById("log").textContent += "\\nYou: " + userMessage + "\\nAI: " + (data.reply || data.error) + "\\n---\\n";
+    const API_URL = "http://localhost:8001";
+
+    let currentTopic = "";
+    let mediaRecorder;
+    let audioChunks = [];
+    let isRecording = false;
+    let voiceModeActive = false;
+
+    const setupScreen = document.getElementById("setupScreen");
+    const debateScreen = document.getElementById("debateScreen");
+    const startDebateBtn = document.getElementById("startDebate");
+    const recordBtn = document.getElementById("recordBtn");
+    const endDebateBtn = document.getElementById("endDebate");
+    const status = document.getElementById("status");
+    const logDiv = document.getElementById("log");
+
+    // Start debate flow
+    startDebateBtn.onclick = async () => {
+      currentTopic = document.getElementById("topic").value.trim();
+      const userStance = document.getElementById("userStance").value.trim();
+
+      if (!currentTopic || !userStance) {
+        alert("Please enter both a topic and your stance!");
+        return;
+      }
+
+      // Log the initial stance
+      logDiv.innerHTML += `<b>Topic:</b> ${currentTopic}<br>`;
+      logDiv.innerHTML += `<b>Your Stance:</b> ${userStance}<br><hr>`;
+
+      // Get AI's initial response to user's stance
+      status.textContent = "Getting AI's response...";
+      try {
+        const res = await fetch(`${API_URL}/debate`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ topic: currentTopic, userMessage: userStance })
+        });
+        const data = await res.json();
+        logDiv.innerHTML += `<b>AI:</b> ${data.reply}<br><hr>`;
+
+        // Switch to voice mode
+        setupScreen.style.display = "none";
+        debateScreen.style.display = "block";
+        document.getElementById("currentTopic").textContent = currentTopic;
+        voiceModeActive = true;
+        status.textContent = "Your turn! Click the microphone to speak.";
+
+      } catch (err) {
+        status.textContent = "Error";
+        logDiv.innerHTML += `<b style="color:red">Error:</b> ${err.message}<br><hr>`;
+      }
     };
+
+    // End debate and return to setup
+    endDebateBtn.onclick = () => {
+      if (isRecording && mediaRecorder) {
+        mediaRecorder.stop();
+      }
+      setupScreen.style.display = "block";
+      debateScreen.style.display = "none";
+      voiceModeActive = false;
+      isRecording = false;
+      recordBtn.textContent = "🎤 Speak Your Argument";
+      status.textContent = "Debate ended";
+    };
+
+    // Voice recording toggle
+    recordBtn.onclick = async () => {
+      if (!voiceModeActive) return;
+
+      if (!isRecording) {
+        // Start Recording
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          mediaRecorder = new MediaRecorder(stream);
+          audioChunks = [];
+
+          mediaRecorder.ondataavailable = event => {
+            audioChunks.push(event.data);
+          };
+
+          mediaRecorder.onstop = async () => {
+            status.textContent = "Processing your audio...";
+            const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+            await sendAudio(audioBlob);
+          };
+
+          mediaRecorder.start();
+          isRecording = true;
+          recordBtn.textContent = "⏹ Stop & Send";
+          status.textContent = "Recording... Speak now!";
+        } catch (err) {
+          console.error("Error accessing microphone:", err);
+          status.textContent = "Microphone error: " + err.message;
+        }
+      } else {
+        // Stop Recording
+        mediaRecorder.stop();
+        isRecording = false;
+        recordBtn.textContent = "🎤 Speak Your Argument";
+      }
+    };
+
+    async function sendAudio(blob) {
+      const formData = new FormData();
+      formData.append("file", blob, "recording.webm");
+
+      const url = new URL(`${API_URL}/debate_audio`);
+      url.searchParams.append("topic", currentTopic);
+
+      try {
+        const res = await fetch(url, {
+          method: "POST",
+          body: formData
+        });
+
+        if (!res.ok) throw new Error("Server error: " + res.statusText);
+
+        const data = await res.json();
+
+        // Display transcript
+        logDiv.innerHTML += `<b>You (Voice):</b> ${data.user_text}<br>`;
+        logDiv.innerHTML += `<b>AI (Voice):</b> ${data.ai_text}<br><hr>`;
+
+        // Play AI's audio response
+        if (data.audio_base64) {
+          status.textContent = "AI is speaking...";
+          const audio = new Audio("data:audio/wav;base64," + data.audio_base64);
+          audio.onended = () => {
+            status.textContent = "Your turn! Click the microphone to speak.";
+          };
+          audio.play();
+        } else {
+          status.textContent = "Ready for your response";
+        }
+
+      } catch (err) {
+        console.error("Backend error:", err);
+        status.textContent = "Error: " + err.message;
+        logDiv.innerHTML += `<b style="color:red">Backend Error:</b> ${err.message}<br><hr>`;
+      }
+    }
   </script>
 </body>
 

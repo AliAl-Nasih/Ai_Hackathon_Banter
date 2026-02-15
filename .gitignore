@@ -3,3 +3,13 @@
 __pycache__/
 *.pyc
 .DS_Store
+
+# Test files
+test_*.py
+test_*.wav
+quick_test.py
+verify_audio.py
+
+# Generated audio files
+ai_response.wav
+*.wav
