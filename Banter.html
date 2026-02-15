@@ -1,70 +1,761 @@
 <!doctype html>
-<html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Debate Banter — The Court of Ideas</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Inter:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg: #E8874A;
+      --bg-light: #F0995E;
+      --quote-color: #D06A2E;
+      --charcoal: #1A1A1A;
+      --night: #111111;
+      --smoke: #222222;
+      --ash: #333333;
+      --silver: #AAAAAA;
+      --pearl: #E8E8E8;
+      --white: #FAFAFA;
+      --gold: #C9A84C;
+      --flame: #E8450E;
+      --ember: #D4380D;
+      --glow: #FF6B35;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--pearl);
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* ───── Philosopher quotes background ───── */
+    .quotes-bg {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .quote-line {
+      position: absolute;
+      white-space: nowrap;
+      font-family: 'Playfair Display', serif;
+      font-weight: 900;
+      color: var(--quote-color);
+      opacity: 0.25;
+      line-height: 1;
+      user-select: none;
+    }
+
+    .quote-line:nth-child(1) {
+      top: 3%;
+      left: -5%;
+      font-size: 2.2rem;
+      transform: rotate(-3deg);
+    }
+
+    .quote-line:nth-child(2) {
+      top: 10%;
+      left: 15%;
+      font-size: 1.6rem;
+      transform: rotate(1deg);
+    }
+
+    .quote-line:nth-child(3) {
+      top: 18%;
+      left: -8%;
+      font-size: 1.9rem;
+      transform: rotate(-1.5deg);
+    }
+
+    .quote-line:nth-child(4) {
+      top: 26%;
+      left: 10%;
+      font-size: 1.4rem;
+      transform: rotate(2deg);
+    }
+
+    .quote-line:nth-child(5) {
+      top: 34%;
+      left: -3%;
+      font-size: 2.0rem;
+      transform: rotate(-2deg);
+    }
+
+    .quote-line:nth-child(6) {
+      top: 42%;
+      left: 20%;
+      font-size: 1.5rem;
+      transform: rotate(1.5deg);
+    }
+
+    .quote-line:nth-child(7) {
+      top: 50%;
+      left: -10%;
+      font-size: 2.1rem;
+      transform: rotate(-1deg);
+    }
+
+    .quote-line:nth-child(8) {
+      top: 58%;
+      left: 5%;
+      font-size: 1.7rem;
+      transform: rotate(2.5deg);
+    }
+
+    .quote-line:nth-child(9) {
+      top: 66%;
+      left: -6%;
+      font-size: 1.8rem;
+      transform: rotate(-2.5deg);
+    }
+
+    .quote-line:nth-child(10) {
+      top: 74%;
+      left: 12%;
+      font-size: 1.5rem;
+      transform: rotate(1deg);
+    }
+
+    .quote-line:nth-child(11) {
+      top: 82%;
+      left: -4%;
+      font-size: 2.0rem;
+      transform: rotate(-1.5deg);
+    }
+
+    .quote-line:nth-child(12) {
+      top: 90%;
+      left: 8%;
+      font-size: 1.6rem;
+      transform: rotate(2deg);
+    }
+
+    /* ───── Container ───── */
+    .app {
+      position: relative;
+      z-index: 1;
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 40px 24px 60px;
+    }
+
+    /* ───── Inline SVG Icons ───── */
+    .icon {
+      display: inline-block;
+      vertical-align: middle;
+    }
+
+    .icon-scales {
+      width: 56px;
+      height: 56px;
+    }
+
+    .icon-gavel {
+      width: 24px;
+      height: 24px;
+    }
+
+    .icon-mic {
+      width: 20px;
+      height: 20px;
+    }
+
+    .icon-scroll {
+      width: 20px;
+      height: 20px;
+    }
+
+    /* ───── Header ───── */
+    .header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .header-icon {
+      display: block;
+      margin: 0 auto 12px;
+      animation: gentleBounce 3s ease-in-out infinite;
+    }
+
+    @keyframes gentleBounce {
+
+      0%,
+      100% {
+        transform: translateY(0);
+      }
+
+      50% {
+        transform: translateY(-6px);
+      }
+    }
+
+    .header h1 {
+      font-family: 'Playfair Display', serif;
+      font-weight: 900;
+      font-size: 2.4rem;
+      color: var(--night);
+      letter-spacing: -0.5px;
+    }
+
+    .header p {
+      font-size: 0.9rem;
+      color: var(--charcoal);
+      margin-top: 6px;
+      font-weight: 500;
+      opacity: 0.7;
+    }
+
+    /* ───── Cards ───── */
+    .card {
+      background: var(--charcoal);
+      border: 1px solid var(--ash);
+      border-radius: 16px;
+      padding: 32px;
+      margin-bottom: 24px;
+      transition: border-color 0.3s ease;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
+
+    .card:hover {
+      border-color: #444;
+    }
+
+    .card-title {
+      font-family: 'Playfair Display', serif;
+      font-weight: 700;
+      font-size: 1.3rem;
+      color: var(--white);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* ───── Form Elements ───── */
+    label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      color: var(--silver);
+      margin-bottom: 8px;
+    }
+
+    input,
+    textarea {
+      width: 100%;
+      background: var(--smoke);
+      border: 1px solid var(--ash);
+      border-radius: 10px;
+      color: var(--pearl);
+      font-family: 'Inter', sans-serif;
+      font-size: 0.95rem;
+      padding: 14px 16px;
+      outline: none;
+      transition: border-color 0.25s ease, box-shadow 0.25s ease;
+      margin-bottom: 18px;
+    }
+
+    input:focus,
+    textarea:focus {
+      border-color: var(--glow);
+      box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.2);
+    }
+
+    input::placeholder,
+    textarea::placeholder {
+      color: #666;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 90px;
+    }
+
+    /* ───── Buttons ───── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-family: 'Inter', sans-serif;
+      font-weight: 600;
+      font-size: 0.95rem;
+      border: none;
+      border-radius: 12px;
+      padding: 14px 28px;
+      cursor: pointer;
+      transition: all 0.25s ease;
+    }
+
+    .btn-primary {
+      background: var(--night);
+      color: var(--white);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 28px rgba(0, 0, 0, 0.5);
+    }
+
+    .btn-primary:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background: var(--smoke);
+      color: var(--silver);
+      border: 1px solid var(--ash);
+    }
+
+    .btn-secondary:hover {
+      background: var(--ash);
+      color: var(--pearl);
+    }
+
+    .btn-mic {
+      background: var(--night);
+      color: var(--white);
+      font-size: 1.05rem;
+      padding: 16px 32px;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+    }
+
+    .btn-mic:hover:not(:disabled) {
+      transform: translateY(-2px) scale(1.02);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    }
+
+    .btn-mic:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-mic.recording {
+      background: var(--flame);
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        box-shadow: 0 4px 24px rgba(232, 69, 14, 0.3);
+      }
+
+      50% {
+        box-shadow: 0 4px 36px rgba(232, 69, 14, 0.7);
+      }
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    /* ───── Status ───── */
+    .status-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 18px;
+      font-size: 0.88rem;
+      color: var(--silver);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--ash);
+      flex-shrink: 0;
+    }
+
+    .status-dot.active {
+      background: #44cc44;
+    }
+
+    .status-dot.listening {
+      background: var(--flame);
+      animation: pulse-dot 1s ease-in-out infinite;
+    }
+
+    .status-dot.processing {
+      background: var(--gold);
+      animation: pulse-dot 0.8s ease-in-out infinite;
+    }
+
+    @keyframes pulse-dot {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.3;
+      }
+    }
+
+    .live-text {
+      font-style: italic;
+      color: var(--glow);
+      min-height: 20px;
+      margin-top: 10px;
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    /* ───── Debate Log ───── */
+    .log-card {
+      background: var(--charcoal);
+      border: 1px solid var(--ash);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
+
+    .log-header {
+      background: var(--smoke);
+      padding: 14px 24px;
+      font-family: 'Playfair Display', serif;
+      font-weight: 700;
+      font-size: 1.05rem;
+      color: var(--white);
+      border-bottom: 1px solid var(--ash);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .log-body {
+      padding: 20px 24px;
+      min-height: 180px;
+      max-height: 400px;
+      overflow-y: auto;
+      font-size: 0.9rem;
+      line-height: 1.7;
+    }
+
+    .log-body::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .log-body::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .log-body::-webkit-scrollbar-thumb {
+      background: var(--ash);
+      border-radius: 3px;
+    }
+
+    .log-empty {
+      color: #555;
+      text-align: center;
+      padding: 40px 0;
+      font-style: italic;
+    }
+
+    .log-entry {
+      margin-bottom: 16px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .log-entry:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .log-label {
+      font-weight: 700;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 4px;
+    }
+
+    .log-label.user {
+      color: var(--glow);
+    }
+
+    .log-label.ai {
+      color: var(--gold);
+    }
+
+    .log-label.topic {
+      color: var(--silver);
+    }
+
+    .log-label.error {
+      color: #ff4444;
+    }
+
+    .log-text {
+      color: var(--pearl);
+    }
+
+    /* ───── Footer decoration ───── */
+    .footer-deco {
+      text-align: center;
+      margin: 32px 0 8px;
+      opacity: 0.5;
+    }
+
+    .footer-deco svg {
+      opacity: 0.6;
+    }
+
+    /* ───── Responsive ───── */
+    @media (max-width: 600px) {
+      .app {
+        padding: 24px 16px 40px;
+      }
+
+      .header h1 {
+        font-size: 1.8rem;
+      }
+
+      .card {
+        padding: 24px 20px;
+      }
+
+      .btn-mic {
+        padding: 14px 24px;
+        font-size: 1rem;
+      }
+
+      .quote-line {
+        font-size: 1.2rem !important;
+      }
+    }
+
+    .fade-in {
+      animation: fadeIn 0.4s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(12px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .hidden {
+      display: none !important;
+    }
+  </style>
+</head>
 
 <body>
-  <h2>AI Debate Banter</h2>
 
-  <div id="setupScreen">
-    <h3>Setup Your Debate</h3>
-    <div>
-      <label>Topic:</label><br>
-      <input id="topic" placeholder="e.g. Universal Basic Income" value="AI Safety"
-        style="width: 80%; margin-bottom: 10px;">
-    </div>
-    <div>
-      <label>Your Stance:</label><br>
-      <textarea id="userStance" placeholder="State your position on the topic..." rows="3"
-        style="width: 80%; margin-bottom: 10px;"></textarea>
-    </div>
-    <button id="startDebate" style="font-size: 16px; padding: 10px 20px;">🎯 Start Voice Debate</button>
+  <!-- Philosopher quotes background -->
+  <div class="quotes-bg">
+    <div class="quote-line">"The only true wisdom is in knowing you know nothing." — Socrates</div>
+    <div class="quote-line">"I think, therefore I am." — René Descartes</div>
+    <div class="quote-line">"He who thinks great thoughts, often makes great errors." — Heidegger</div>
+    <div class="quote-line">"The unexamined life is not worth living." — Socrates</div>
+    <div class="quote-line">"Injustice anywhere is a threat to justice everywhere." — Martin Luther King Jr.</div>
+    <div class="quote-line">"Man is condemned to be free." — Jean-Paul Sartre</div>
+    <div class="quote-line">"One cannot step twice in the same river." — Heraclitus</div>
+    <div class="quote-line">"To be is to be perceived." — George Berkeley</div>
+    <div class="quote-line">"Happiness is the highest good." — Aristotle</div>
+    <div class="quote-line">"Liberty consists in doing what one desires." — John Stuart Mill</div>
+    <div class="quote-line">"We are what we repeatedly do." — Aristotle</div>
+    <div class="quote-line">"Without justice, courage is weak." — Benjamin Franklin</div>
   </div>
 
-  <div id="debateScreen" style="display: none;">
-    <h3>Voice Debate in Progress</h3>
-    <p><strong>Topic:</strong> <span id="currentTopic"></span></p>
-    <button id="recordBtn">🎤 Speak Your Argument</button>
-    <button id="endDebate" style="margin-left: 10px;">End Debate</button>
-    <p id="status">Waiting for you to speak...</p>
+  <div class="app">
+
+    <!-- Header -->
+    <header class="header">
+      <div class="header-icon">
+        <!-- Scales of Justice SVG - black -->
+        <svg class="icon icon-scales" viewBox="0 0 64 64" fill="#111111" xmlns="http://www.w3.org/2000/svg">
+          <path
+            d="M32 4a2 2 0 0 1 2 2v4h14l6 18c0 4-4.5 7-10 7s-10-3-10-7l6-18h-6v30h8a2 2 0 0 1 0 4H22a2 2 0 0 1 0-4h8V10h-6l6 18c0 4-4.5 7-10 7s-10-3-10-7l6-18h14V6a2 2 0 0 1 2-2zM16 28l-4-12h8l-4 12zm28 0l-4-12h8l-4 12z" />
+        </svg>
+      </div>
+      <h1>AI Debate Banter</h1>
+      <p>The Court of Ideas — Present your case</p>
+    </header>
+
+    <!-- Setup Screen -->
+    <div id="setupScreen">
+      <div class="card fade-in">
+        <div class="card-title">
+          <!-- Gavel SVG - black -->
+          <svg class="icon icon-gavel" viewBox="0 0 24 24" fill="#FAFAFA" xmlns="http://www.w3.org/2000/svg">
+            <path
+              d="M2 22v-2h20v2H2zm7.3-4L4 12.7l1.4-1.4 1.6 1.6 6.4-6.4-1.6-1.6L13.2 4l5.4 5.3-1.4 1.4-1.6-1.6-3.2 3.2 3.2 3.2 1.6-1.6 1.4 1.4L13.3 20l-1.4-1.4 1.6-1.6-3.2-3.2-1.6 1.6L10.3 17 9.3 18z" />
+          </svg>
+          Open Your Case
+        </div>
+
+        <label for="topic">Debate Topic</label>
+        <input id="topic" placeholder="e.g. Universal Basic Income, AI Regulation…" value="AI Safety">
+
+        <label for="userStance">Your Opening Statement</label>
+        <textarea id="userStance"
+          placeholder="State your position clearly. The AI will take the opposing side…"></textarea>
+
+        <button id="startDebate" class="btn btn-primary" style="width:100%; margin-top: 4px;">
+          <!-- Small scales icon in button -->
+          <svg class="icon" width="18" height="18" viewBox="0 0 64 64" fill="currentColor"
+            xmlns="http://www.w3.org/2000/svg">
+            <path
+              d="M32 4a2 2 0 0 1 2 2v4h14l6 18c0 4-4.5 7-10 7s-10-3-10-7l6-18h-6v30h8a2 2 0 0 1 0 4H22a2 2 0 0 1 0-4h8V10h-6l6 18c0 4-4.5 7-10 7s-10-3-10-7l6-18h14V6a2 2 0 0 1 2-2zM16 28l-4-12h8l-4 12zm28 0l-4-12h8l-4 12z" />
+          </svg>
+          Begin Voice Debate
+        </button>
+      </div>
+    </div>
+
+    <!-- Debate Screen -->
+    <div id="debateScreen" class="hidden">
+      <div class="card fade-in">
+        <div class="card-title">
+          <svg class="icon icon-gavel" viewBox="0 0 24 24" fill="#FAFAFA" xmlns="http://www.w3.org/2000/svg">
+            <path
+              d="M2 22v-2h20v2H2zm7.3-4L4 12.7l1.4-1.4 1.6 1.6 6.4-6.4-1.6-1.6L13.2 4l5.4 5.3-1.4 1.4-1.6-1.6-3.2 3.2 3.2 3.2 1.6-1.6 1.4 1.4L13.3 20l-1.4-1.4 1.6-1.6-3.2-3.2-1.6 1.6L10.3 17 9.3 18z" />
+          </svg>
+          Court in Session
+        </div>
+        <p style="font-size: 0.85rem; color: var(--silver); margin-bottom: 18px;">
+          Topic: <strong style="color: var(--pearl);" id="currentTopic"></strong>
+        </p>
+
+        <div class="btn-group">
+          <button id="recordBtn" class="btn btn-mic">
+            <svg class="icon icon-mic" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+              <path
+                d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm-1 4.93A7 7 0 0 1 5 12h2a5 5 0 0 0 10 0h2a7 7 0 0 1-6 6.93V21h4v2H7v-2h4v-2.07z" />
+            </svg>
+            Speak Your Argument
+          </button>
+          <button id="endDebate" class="btn btn-secondary">End Session</button>
+        </div>
+
+        <div class="status-bar">
+          <div class="status-dot" id="statusDot"></div>
+          <span id="status">Your turn — click the microphone to present your argument.</span>
+        </div>
+
+        <div class="live-text" id="liveTranscript"></div>
+      </div>
+    </div>
+
+    <!-- Debate Log -->
+    <div class="log-card fade-in">
+      <div class="log-header">
+        <svg class="icon icon-scroll" viewBox="0 0 24 24" fill="#FAFAFA" xmlns="http://www.w3.org/2000/svg">
+          <path
+            d="M19 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zm-9 14H7v-2h3v2zm5-4H7v-2h8v2zm2-4H7V7h10v2z" />
+        </svg>
+        Court Transcript
+      </div>
+      <div class="log-body" id="log">
+        <div class="log-empty">The court awaits your opening statement…</div>
+      </div>
+    </div>
+
+    <!-- Footer decoration -->
+    <div class="footer-deco">
+      <svg width="120" height="24" viewBox="0 0 120 24" fill="#111111" xmlns="http://www.w3.org/2000/svg">
+        <path d="M10 12l-4-8h8l-4 8zm0 2c-2.8 0-5-1.5-5-3.5h10c0 2-2.2 3.5-5 3.5z" opacity="0.5" />
+        <path d="M60 2a1 1 0 0 1 1 1v18a1 1 0 0 1-2 0V3a1 1 0 0 1 1-1zm-4 19h8v2h-8v-2z" opacity="0.5" />
+        <path d="M110 12l-4-8h8l-4 8zm0 2c-2.8 0-5-1.5-5-3.5h10c0 2-2.2 3.5-5 3.5z" opacity="0.5" />
+      </svg>
+    </div>
   </div>
-
-  <hr>
-
-  <h3>Debate Log</h3>
-  <div id="log" style="white-space: pre-wrap; background: #f0f0f0; padding: 10px; min-height: 200px;"></div>
 
   <script>
     const API_URL = "http://localhost:8001";
 
     let currentTopic = "";
-    let mediaRecorder;
-    let audioChunks = [];
-    let isRecording = false;
+    let isListening = false;
     let voiceModeActive = false;
+    let recognition = null;
+    let logStarted = false;
 
     const setupScreen = document.getElementById("setupScreen");
     const debateScreen = document.getElementById("debateScreen");
     const startDebateBtn = document.getElementById("startDebate");
     const recordBtn = document.getElementById("recordBtn");
     const endDebateBtn = document.getElementById("endDebate");
-    const status = document.getElementById("status");
+    const statusText = document.getElementById("status");
+    const statusDot = document.getElementById("statusDot");
     const logDiv = document.getElementById("log");
+    const liveTranscript = document.getElementById("liveTranscript");
 
-    // Start debate flow
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Your browser doesn't support Speech Recognition. Please use Chrome or Edge.");
+    }
+
+    function setStatus(text, dotClass) {
+      statusText.textContent = text;
+      statusDot.className = "status-dot" + (dotClass ? " " + dotClass : "");
+    }
+
+    function addLog(label, labelClass, text) {
+      if (!logStarted) { logDiv.innerHTML = ""; logStarted = true; }
+      const entry = document.createElement("div");
+      entry.className = "log-entry fade-in";
+      entry.innerHTML = `<div class="log-label ${labelClass}">${label}</div><div class="log-text">${text}</div>`;
+      logDiv.appendChild(entry);
+      logDiv.scrollTop = logDiv.scrollHeight;
+    }
+
+    // ───── Start Debate ─────
     startDebateBtn.onclick = async () => {
       currentTopic = document.getElementById("topic").value.trim();
       const userStance = document.getElementById("userStance").value.trim();
 
       if (!currentTopic || !userStance) {
-        alert("Please enter both a topic and your stance!");
+        alert("Please fill in both the topic and your stance.");
         return;
       }
 
-      // Log the initial stance
-      logDiv.innerHTML += `<b>Topic:</b> ${currentTopic}<br>`;
-      logDiv.innerHTML += `<b>Your Stance:</b> ${userStance}<br><hr>`;
+      startDebateBtn.disabled = true;
+      startDebateBtn.innerHTML = '<svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="3" opacity="0.4"><animate attributeName="r" values="3;6;3" dur="1s" repeatCount="indefinite"/></circle></svg> Summoning the AI opponent…';
 
-      // Get AI's initial response to user's stance
-      status.textContent = "Getting AI's response...";
+      addLog("Topic", "topic", currentTopic);
+      addLog("Your Opening", "user", userStance);
+
       try {
         const res = await fetch(`${API_URL}/debate`, {
           method: "POST",
@@ -72,108 +763,131 @@
           body: JSON.stringify({ topic: currentTopic, userMessage: userStance })
         });
         const data = await res.json();
-        logDiv.innerHTML += `<b>AI:</b> ${data.reply}<br><hr>`;
+        addLog("AI Rebuttal", "ai", data.reply);
 
-        // Switch to voice mode
-        setupScreen.style.display = "none";
-        debateScreen.style.display = "block";
+        setupScreen.classList.add("hidden");
+        debateScreen.classList.remove("hidden");
         document.getElementById("currentTopic").textContent = currentTopic;
         voiceModeActive = true;
-        status.textContent = "Your turn! Click the microphone to speak.";
+        setStatus("Your turn — click the microphone to present your argument.", "active");
 
       } catch (err) {
-        status.textContent = "Error";
-        logDiv.innerHTML += `<b style="color:red">Error:</b> ${err.message}<br><hr>`;
+        addLog("Error", "error", err.message);
+      } finally {
+        startDebateBtn.disabled = false;
+        startDebateBtn.innerHTML = '<svg class="icon" width="18" height="18" viewBox="0 0 64 64" fill="currentColor"><path d="M32 4a2 2 0 0 1 2 2v4h14l6 18c0 4-4.5 7-10 7s-10-3-10-7l6-18h-6v30h8a2 2 0 0 1 0 4H22a2 2 0 0 1 0-4h8V10h-6l6 18c0 4-4.5 7-10 7s-10-3-10-7l6-18h14V6a2 2 0 0 1 2-2zM16 28l-4-12h8l-4 12zm28 0l-4-12h8l-4 12z"/></svg> Begin Voice Debate';
       }
     };
 
-    // End debate and return to setup
+    // ───── End Debate ─────
     endDebateBtn.onclick = () => {
-      if (isRecording && mediaRecorder) {
-        mediaRecorder.stop();
-      }
-      setupScreen.style.display = "block";
-      debateScreen.style.display = "none";
+      stopListening();
+      setupScreen.classList.remove("hidden");
+      debateScreen.classList.add("hidden");
       voiceModeActive = false;
-      isRecording = false;
-      recordBtn.textContent = "🎤 Speak Your Argument";
-      status.textContent = "Debate ended";
+      setStatus("Session ended.", "");
+      addLog("Session", "topic", "Court adjourned.");
     };
 
-    // Voice recording toggle
-    recordBtn.onclick = async () => {
+    // ───── Record Toggle ─────
+    recordBtn.onclick = () => {
       if (!voiceModeActive) return;
-
-      if (!isRecording) {
-        // Start Recording
-        try {
-          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-          mediaRecorder = new MediaRecorder(stream);
-          audioChunks = [];
-
-          mediaRecorder.ondataavailable = event => {
-            audioChunks.push(event.data);
-          };
-
-          mediaRecorder.onstop = async () => {
-            status.textContent = "Processing your audio...";
-            const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-            await sendAudio(audioBlob);
-          };
-
-          mediaRecorder.start();
-          isRecording = true;
-          recordBtn.textContent = "⏹ Stop & Send";
-          status.textContent = "Recording... Speak now!";
-        } catch (err) {
-          console.error("Error accessing microphone:", err);
-          status.textContent = "Microphone error: " + err.message;
-        }
-      } else {
-        // Stop Recording
-        mediaRecorder.stop();
-        isRecording = false;
-        recordBtn.textContent = "🎤 Speak Your Argument";
-      }
+      if (!isListening) { startListening(); }
+      else { stopListening(); }
     };
 
-    async function sendAudio(blob) {
-      const formData = new FormData();
-      formData.append("file", blob, "recording.webm");
+    function startListening() {
+      recognition = new SpeechRecognition();
+      recognition.lang = "en-US";
+      recognition.interimResults = true;
+      recognition.continuous = true;
 
-      const url = new URL(`${API_URL}/debate_audio`);
-      url.searchParams.append("topic", currentTopic);
+      let finalTranscript = "";
+
+      recognition.onresult = (event) => {
+        let interim = "";
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const t = event.results[i][0].transcript;
+          if (event.results[i].isFinal) { finalTranscript += t + " "; }
+          else { interim += t; }
+        }
+        liveTranscript.textContent = finalTranscript + interim;
+      };
+
+      recognition.onerror = (event) => {
+        console.error("Speech recognition error:", event.error);
+        setStatus("Speech error: " + event.error, "");
+        isListening = false;
+        updateRecordBtn(false);
+      };
+
+      recognition.onend = () => {
+        if (finalTranscript.trim()) { sendVoiceText(finalTranscript.trim()); }
+        else { setStatus("No speech detected. Try again.", "active"); liveTranscript.textContent = ""; }
+        isListening = false;
+        updateRecordBtn(false);
+      };
+
+      recognition.start();
+      isListening = true;
+      updateRecordBtn(true);
+      setStatus("Listening… speak your argument now.", "listening");
+      liveTranscript.textContent = "";
+    }
+
+    function stopListening() {
+      if (recognition) recognition.stop();
+      isListening = false;
+      updateRecordBtn(false);
+    }
+
+    function updateRecordBtn(recording) {
+      const micSvg = '<svg class="icon icon-mic" viewBox="0 0 24 24" fill="currentColor"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm-1 4.93A7 7 0 0 1 5 12h2a5 5 0 0 0 10 0h2a7 7 0 0 1-6 6.93V21h4v2H7v-2h4v-2.07z"/></svg>';
+      if (recording) {
+        recordBtn.innerHTML = '<svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg> Stop & Submit';
+        recordBtn.classList.add("recording");
+      } else {
+        recordBtn.innerHTML = micSvg + ' Speak Your Argument';
+        recordBtn.classList.remove("recording");
+      }
+    }
+
+    // ───── Send to Backend ─────
+    async function sendVoiceText(userText) {
+      setStatus("AI is deliberating…", "processing");
+      liveTranscript.textContent = "";
+      recordBtn.disabled = true;
+
+      addLog("You (Voice)", "user", userText);
 
       try {
-        const res = await fetch(url, {
+        const res = await fetch(`${API_URL}/debate_voice`, {
           method: "POST",
-          body: formData
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ topic: currentTopic, userMessage: userText })
         });
 
         if (!res.ok) throw new Error("Server error: " + res.statusText);
-
         const data = await res.json();
 
-        // Display transcript
-        logDiv.innerHTML += `<b>You (Voice):</b> ${data.user_text}<br>`;
-        logDiv.innerHTML += `<b>AI (Voice):</b> ${data.ai_text}<br><hr>`;
+        addLog("AI Rebuttal", "ai", data.ai_text);
 
-        // Play AI's audio response
         if (data.audio_base64) {
-          status.textContent = "AI is speaking...";
+          setStatus("AI is delivering its verdict…", "processing");
           const audio = new Audio("data:audio/wav;base64," + data.audio_base64);
-          audio.onended = () => {
-            status.textContent = "Your turn! Click the microphone to speak.";
-          };
+          audio.onended = () => { setStatus("Your turn — click the microphone to respond.", "active"); recordBtn.disabled = false; };
+          audio.onerror = () => { setStatus("Audio playback failed. Your turn.", "active"); recordBtn.disabled = false; };
           audio.play();
         } else {
-          status.textContent = "Ready for your response";
+          setStatus("Your turn — click the microphone to respond.", "active");
+          recordBtn.disabled = false;
         }
 
       } catch (err) {
         console.error("Backend error:", err);
-        status.textContent = "Error: " + err.message;
-        logDiv.innerHTML += `<b style="color:red">Backend Error:</b> ${err.message}<br><hr>`;
+        setStatus("Error: " + err.message, "");
+        addLog("Error", "error", err.message);
+        recordBtn.disabled = false;
       }
     }
   </script>

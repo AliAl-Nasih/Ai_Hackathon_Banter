@@ -1,4 +1,5 @@
 from fastapi import FastAPI, UploadFile, File
+from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import os
@@ -35,6 +36,36 @@ class DebateRequest(BaseModel):
 def debate(req: DebateRequest):
     ai_reply = get_ai_rebuttal(req.topic, req.userMessage)
     return {"reply": ai_reply}
+
+# ----- Serve the HTML frontend -----
+@app.get("/")
+def serve_frontend():
+    return FileResponse("Banter.html")
+
+# ----- API endpoint (Voice: text in, rebuttal + TTS audio out) -----
+@app.post("/debate_voice")
+def debate_voice(req: DebateRequest):
+    # 1. Get AI Rebuttal (LLM) using Cerebras
+    ai_reply = get_ai_rebuttal(req.topic, req.userMessage)
+    print(f"[debate_voice] User said: {req.userMessage}")
+    print(f"[debate_voice] AI reply: {ai_reply}")
+
+    # 2. Synthesize (TTS) using Smallest AI
+    tts_text = ai_reply[:200]
+    if len(tts_text) < len(ai_reply):
+        print(f"[debate_voice] Truncated TTS to 200 chars")
+
+    try:
+        audio_bytes = waves_client.synthesize(tts_text)
+        audio_base64 = base64.b64encode(audio_bytes).decode("utf-8")
+    except Exception as e:
+        print(f"[debate_voice] TTS error: {e}")
+        audio_base64 = None
+
+    return {
+        "ai_text": ai_reply,
+        "audio_base64": audio_base64
+    }
 
 # ----- API endpoint (Audio) -----
 @app.post("/debate_audio")
