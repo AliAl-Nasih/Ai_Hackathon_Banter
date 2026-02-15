@@ -1,13 +1,16 @@
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import os
 import shutil
 import base64
+import json
+from typing import List, Dict
 from dotenv import load_dotenv
 from cerebras.cloud.sdk import Cerebras
 from smallestai import WavesClient
+from scoring_system import DebateScorer
 
 # Load API keys from .env
 load_dotenv()
@@ -15,6 +18,7 @@ load_dotenv()
 # Initialize Clients
 cerebras_client = Cerebras(api_key=os.getenv("CEREBRAS_API_KEY"))
 waves_client = WavesClient(api_key=os.getenv("SMALLEST_API_KEY"))
+scorer = DebateScorer(cerebras_client=cerebras_client)
 
 app = FastAPI()
 
@@ -37,10 +41,18 @@ def debate(req: DebateRequest):
     ai_reply = get_ai_rebuttal(req.topic, req.userMessage)
     return {"reply": ai_reply}
 
-# ----- Serve the HTML frontend -----
+# ----- Serve the HTML frontend and assets -----
 @app.get("/")
 def serve_frontend():
     return FileResponse("Banter.html")
+
+@app.get("/scales.png")
+def serve_scales():
+    return FileResponse("scales.png")
+
+@app.get("/gavel.png")
+def serve_gavel():
+    return FileResponse("gavel.png")
 
 # ----- API endpoint (Voice: text in, rebuttal + TTS audio out) -----
 @app.post("/debate_voice")
@@ -67,7 +79,51 @@ def debate_voice(req: DebateRequest):
         "audio_base64": audio_base64
     }
 
-# ----- API endpoint (Audio) -----
+# ----- NEW: Scoring Endpoint -----
+class ScoreRequest(BaseModel):
+    topic: str
+    history: List[Dict[str, str]]
+
+@app.post("/score")
+async def score_debate(topic: str = Form(...), history: str = Form(...), file: UploadFile = File(None)):
+    """
+    Evaluates the debate session.
+    'history' should be a JSON string of the debate turns.
+    'file' is the last user audio recording for delivery analysis.
+    """
+    debate_history = json.loads(history)
+    
+    # 1. Content Scoring (Novelty, Engagement, Efficiency)
+    content_scores = scorer.score_content(topic, debate_history)
+    
+    # 2. Audio Scoring (Volume, Pitch/Fluency)
+    audio_scores = {"volume": 0.0, "pitch_fluency": 0.0}
+    if file:
+        audio_bytes = await file.read()
+        audio_scores = scorer.score_audio(audio_bytes)
+    
+    # Combined response
+    total_score = (
+        audio_scores["volume"] + 
+        audio_scores["pitch_fluency"] + 
+        content_scores.get("novelty_score", 0) + 
+        content_scores.get("engagement_score", 0) + 
+        content_scores.get("efficiency_score", 0)
+    )
+    
+    return {
+        "total_score": round(total_score, 1),
+        "breakdown": {
+            "volume": audio_scores["volume"],
+            "pitch_fluency": audio_scores["pitch_fluency"],
+            "novelty": content_scores.get("novelty_score", 0),
+            "engagement": content_scores.get("engagement_score", 0),
+            "efficiency": content_scores.get("efficiency_score", 0)
+        },
+        "feedback": content_scores.get("feedback", "Good performance!")
+    }
+
+# ----- API endpoint (Audio - Legacy/Backup) -----
 @app.post("/debate_audio")
 def debate_audio(topic: str, file: UploadFile = File(...)):
     # 1. Save uploaded audio to temp file
@@ -138,23 +194,29 @@ def debate_audio(topic: str, file: UploadFile = File(...)):
             os.remove(temp_filename)
 
 def get_ai_rebuttal(topic: str, user_message: str) -> str:
-    prompt = f"""
-You are a skilled debate opponent.
-Debate topic: {topic}
+    system_prompt = f"""
+You are "The Opposition," a stubborn, highly sophisticated, and slightly arrogant debater in a Formal Court of Ideas.
+Your goal is to NEVER concede a single point. You must 100% support the opposite side of the user's stance on the topic: "{topic}".
 
-The user argues:
-"{user_message}"
+Voice Traits:
+- Speak clearly and authoritatively.
+- Use sharp, intellectual language to dismiss the user's claims.
+- Use natural punctuation for clear speech rhythm.
 
-Respond with a logical rebuttal.
-Keep it extremely brief (1 short sentence).
-Be respectful but firm.
+Persona Rules:
+- You are strictly the opposition.
+- You are willing to invent authoritative-sounding facts, statistics, or historical precedents to defend your position, even if they are completely false.
+- Be extremely confident in your arguments.
+- Keep the response brief (1-3 sentences maximum) for the voice interaction.
+- Do NOT be polite. Be sharp and argumentative.
 """
+    
     response = cerebras_client.chat.completions.create(
         model="llama3.1-8b",
         messages=[
-            {"role": "system", "content": "You are a concise expert debater."},
-            {"role": "user", "content": prompt}
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_message}
         ],
-        max_tokens=60
+        max_tokens=150
     )
     return response.choices[0].message.content
