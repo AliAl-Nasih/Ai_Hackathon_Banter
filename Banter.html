@@ -869,14 +869,9 @@
 
         addLog("AI Opposition", "ai", data.ai_text, "ai");
 
-        if (data.audio_base64) {
+        if (data.audio_chunks && data.audio_chunks.length > 0) {
           setStatus("The Opposition is speaking...", "processing");
-          const audio = new Audio("data:audio/wav;base64," + data.audio_base64);
-          audio.onended = () => {
-            setStatus("Your turn — click the microphone to respond.", "active");
-            recordBtn.disabled = false;
-          };
-          audio.play();
+          playAudioQueue(data.audio_chunks, 0);
         } else {
           setStatus("Your turn — click the microphone to respond.", "active");
           recordBtn.disabled = false;
@@ -888,6 +883,39 @@
         addLog("Error", "error", err.message);
         recordBtn.disabled = false;
       }
+    }
+
+    function playAudioQueue(chunks, index) {
+      if (!chunks || index >= chunks.length) {
+        console.log("Audio queue finished.");
+        setStatus("Your turn — click the microphone to respond.", "active");
+        recordBtn.disabled = false;
+        return;
+      }
+
+      console.log(`Playing audio chunk ${index + 1} of ${chunks.length}...`);
+      // Use audio/mpeg for MP3 (most common TTS output) or try to detect if needed
+      const audio = new Audio("data:audio/mpeg;base64," + chunks[index]);
+
+      audio.onplay = () => {
+        console.log(`Chunk ${index + 1} started.`);
+      };
+
+      audio.onended = () => {
+        console.log(`Chunk ${index + 1} ended.`);
+        playAudioQueue(chunks, index + 1);
+      };
+
+      audio.onerror = (e) => {
+        console.error(`Audio playback error at chunk ${index}:`, e);
+        // Attempt to continue anyway
+        playAudioQueue(chunks, index + 1);
+      };
+
+      audio.play().catch(err => {
+        console.error(`Failed to play chunk ${index}:`, err);
+        playAudioQueue(chunks, index + 1);
+      });
     }
   </script>
 </body>

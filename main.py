@@ -11,6 +11,9 @@ from dotenv import load_dotenv
 from cerebras.cloud.sdk import Cerebras
 from smallestai import WavesClient
 from scoring_system import DebateScorer
+import re
+import io
+from pydub import AudioSegment
 
 # Load API keys from .env
 load_dotenv()
@@ -62,21 +65,52 @@ def debate_voice(req: DebateRequest):
     print(f"[debate_voice] User said: {req.userMessage}")
     print(f"[debate_voice] AI reply: {ai_reply}")
 
-    # 2. Synthesize (TTS) using Smallest AI
-    tts_text = ai_reply[:200]
-    if len(tts_text) < len(ai_reply):
-        print(f"[debate_voice] Truncated TTS to 200 chars")
-
+    # 2. Synthesize (TTS) using Smallest AI in chunks to prevent truncation
+    audio_chunks = []
     try:
-        audio_bytes = waves_client.synthesize(tts_text)
-        audio_base64 = base64.b64encode(audio_bytes).decode("utf-8")
+        # 1. Split by sentence first
+        sentence_chunks = re.split(r'(?<=[.!?])\s+', ai_reply)
+        
+        final_chunks = []
+        for s in sentence_chunks:
+            # 2. If a sentence is still too long (> 250 chars), split by commas or semi-colons
+            if len(s) > 250:
+                sub_chunks = re.split(r'(?<=[,;])\s+', s)
+                for sc in sub_chunks:
+                    # 3. If STILL too long, hard split at 250
+                    while len(sc) > 250:
+                        final_chunks.append(sc[:250])
+                        sc = sc[250:]
+                    if sc.strip():
+                        final_chunks.append(sc)
+            else:
+                if s.strip():
+                    final_chunks.append(s)
+        
+        print(f"[debate_voice] Synthesizing {len(final_chunks)} chunks...")
+        for i, chunk in enumerate(final_chunks):
+            # Clean chunk text: remove newlines and weird symbols that break TTS
+            clean_chunk = re.sub(r'[\n\r\t]', ' ', chunk).strip()
+            if not clean_chunk:
+                continue
+                
+            print(f"  Chunk {i}: {len(clean_chunk)} chars")
+            try:
+                chunk_audio_bytes = waves_client.synthesize(clean_chunk)
+                if len(chunk_audio_bytes) < 100: # Sanity check for empty/tiny audio
+                    print(f"    WARNING: Chunk {i} audio is suspiciously small ({len(chunk_audio_bytes)} bytes)")
+                
+                chunk_base64 = base64.b64encode(chunk_audio_bytes).decode("utf-8")
+                audio_chunks.append(chunk_base64)
+            except Exception as ex:
+                print(f"    ERROR: Failed to synthesize chunk {i}: {ex}")
+            
     except Exception as e:
         print(f"[debate_voice] TTS error: {e}")
-        audio_base64 = None
 
     return {
         "ai_text": ai_reply,
-        "audio_base64": audio_base64
+        "audio_chunks": audio_chunks
     }
 
 # ----- NEW: Scoring Endpoint -----
@@ -174,13 +208,7 @@ def debate_audio(topic: str, file: UploadFile = File(...)):
         print(f"AI reply: {ai_reply}")
 
         # 4. Synthesize (TTS) using Smallest AI
-        # Truncate to 200 chars to avoid "Text length exceeds the limit" error
-        tts_text = ai_reply[:200]
-        if len(tts_text) < len(ai_reply):
-             # Ensure we don't cut off in the middle of a word if possible, but hard limit is safer for now
-             print(f"Truncated TTS text to: {tts_text}...")
-
-        audio_bytes = waves_client.synthesize(tts_text)
+        audio_bytes = waves_client.synthesize(ai_reply)
         audio_base64 = base64.b64encode(audio_bytes).decode("utf-8")
 
         return {
@@ -208,7 +236,7 @@ Persona Rules:
 - You are willing to invent authoritative-sounding facts, statistics, or historical precedents to defend your position, even if they are completely false.
 - Be extremely confident in your arguments.
 - Keep the response brief (1-3 sentences maximum) for the voice interaction.
-- Do NOT be polite. Be sharp and argumentative.
+- Be sharp and argumentative.
 """
     
     response = cerebras_client.chat.completions.create(
